@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── ENUMS ───────────────────────────────
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum Status {
+  NEW
+  ACKNOWLEDGED
+  ACTIONED
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+// ─────────────────────────────── MODELS ───────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(MEMBER)
+  createdAt     DateTime @default(now())
+
+  analyses      FeedbackAnalysis[] 
+  triageActions TriageAction[]
+  feedbackItems FeedbackItem[]
+}
+
+// Feedback items 
+model FeedbackItem {
+  id                String   @id @default(cuid())
+  source            String
+  externalId        String
+  rawContent        String
+  originalTimestamp DateTime
+  createdAt         DateTime @default(now())
+  sentiment         String?   // "positive" | "neutral" | "negative"
+  severity          Int?
+  topics            String[]
+
+
+  userId            String?        
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status            Status @default(NEW)
+
+  analyses          FeedbackAnalysis[]
+  triageActions     TriageAction[]
+
+  @@unique([source, externalId]) // Prevent duplicates
+  @@index([createdAt])
+}
+
+// LLM or user-generated analysis for a feedback item
+model FeedbackAnalysis {
+  id             String    @id @default(cuid())
+  feedbackItemId String
+  userId         String?   // null = system (AI)
+  sentiment      Sentiment
+  topics         Json
+  severityScore  Int        
+  summary        String
+  status         Status     @default(NEW)
+  createdAt      DateTime   @default(now())
+
+  feedbackItem   FeedbackItem @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([severityScore])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Each Lambda run stores logs for reliability and visibility
+model IngestionLog {
+  id         String   @id @default(cuid())
+  source     String
+  runId      String
+  level      String   
+  message    String
+  meta       Json?
+  createdAt  DateTime @default(now())
+}
+
+// Track manual status changes
+model TriageAction {
+  id             String    @id @default(cuid())
+  feedbackItemId String
+  userId         String
+  fromStatus     Status
+  toStatus       Status
+  note           String?
+  createdAt      DateTime  @default(now())
+
+  feedbackItem   FeedbackItem @relation(fields: [feedbackItemId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackItemId, createdAt])
+  @@index([userId, createdAt])
+}
