@@ -33,11 +33,11 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.1.12",
 
-    "@tailwindcss/postcss": "^4.1.17"
+    "@tailwindcss/postcss": "^4.1.17",
+     "@types/node": "^20"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
-    "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.9.5",
