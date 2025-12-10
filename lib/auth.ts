@@ -14,9 +14,19 @@ interface JWTPayload {
   role?: string;
 }
 
+const AUTH_SECRET_VALUE =
+  process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
+if (!AUTH_SECRET_VALUE) {
+  
+  throw new Error(
+    "AUTH_SECRET / NEXTAUTH_SECRET is not set. Please configure it in the environment."
+  );
+}
+
 // --------------- config ---------------------
 export const authConfig: NextAuthConfig = {
-  secret: process.env.AUTH_SECRET,
+  secret: AUTH_SECRET_VALUE,
 
   trustHost: true,
 
