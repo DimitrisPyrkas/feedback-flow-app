@@ -17,6 +17,9 @@ interface JWTPayload {
 // --------------- config ---------------------
 export const authConfig: NextAuthConfig = {
   secret: process.env.AUTH_SECRET,
+
+  trustHost: true,
+
   providers: [
     Credentials({
       name: "Credentials",
