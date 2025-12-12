@@ -18,7 +18,6 @@ const AUTH_SECRET_VALUE =
   process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
 if (!AUTH_SECRET_VALUE) {
-  
   throw new Error(
     "AUTH_SECRET / NEXTAUTH_SECRET is not set. Please configure it in the environment."
   );
@@ -47,10 +46,7 @@ export const authConfig: NextAuthConfig = {
         });
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(
-          creds.password,
-          user.passwordHash
-        );
+        const isValid = await bcrypt.compare(creds.password, user.passwordHash);
         if (!isValid) return null;
 
         return { id: user.id, email: user.email, role: user.role };
@@ -62,6 +58,17 @@ export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // allow relative redirects
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+
+      // allow same-origin absolute redirects
+      const u = new URL(url);
+      if (u.origin === baseUrl) return url;
+
+      return baseUrl;
+    },
+
     async jwt({ token, user }) {
       const t = token as JWTPayload;
       if (user) {
@@ -81,6 +88,3 @@ export const authConfig: NextAuthConfig = {
     },
   },
 } satisfies NextAuthConfig;
-
-
-
