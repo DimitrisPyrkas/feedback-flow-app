@@ -9,7 +9,7 @@ export function LogoutButton() {
 
   return (
     <button
-      onClick={() => startTransition(() => signOut({ callbackUrl: "https://www.feedbackflow.site/login" }))}
+      onClick={() => startTransition(() => signOut({ callbackUrl: `${window.location.origin}/login` }))}
       disabled={isPending}
       className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition disabled:opacity-50"
     >
