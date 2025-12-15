@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react"; // Added Loader2
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -11,10 +11,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     const res = await signIn("credentials", {
       email,
@@ -24,8 +26,10 @@ export default function LoginPage() {
 
     if (res?.error) {
       setError("Invalid credentials");
+      setIsLoading(false);
     } else {
       router.push("/dashboard");
+      router.refresh();
     }
   };
 
@@ -56,9 +60,10 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               className="w-full pl-10 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500
-                       px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500
+                        px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               autoComplete="email"
               required
             />
@@ -77,9 +82,10 @@ export default function LoginPage() {
               placeholder="Your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               className="w-full pl-10 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500
-                       px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500
+                        px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               autoComplete="current-password"
               required
             />
@@ -94,11 +100,20 @@ export default function LoginPage() {
 
         <button
           type="submit"
+          disabled={isLoading}
           className="w-full inline-flex items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-medium
-                   py-2.5 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+                   py-2.5 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          Sign In
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing In...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </button>
+
         <p className="mt-4 text-xs text-center text-slate-500">
           Don&apos;t have an account?{" "}
           <Link
