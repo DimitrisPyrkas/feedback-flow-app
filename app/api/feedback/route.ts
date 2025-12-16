@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as Record<string, unknown>;
 
     const rawContent =
       typeof body.rawContent === "string" ? body.rawContent.trim() : "";
@@ -36,11 +36,7 @@ export async function POST(req: Request) {
     let initialTopics: string[] = [];
     if (Array.isArray(body.topics)) {
       initialTopics = (body.topics as unknown[])
-        .map((t) =>
-          String(t || "")
-            .trim()
-            .toLowerCase()
-        )
+        .map((t) => String(t || "").trim())
         .filter((t) => t.length > 0);
     }
 
@@ -65,10 +61,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      {
-        ok: true,
-        feedbackId: feedback.id,
-      },
+      { ok: true, feedbackId: feedback.id },
       { status: 201 }
     );
   } catch (err) {
@@ -103,7 +96,6 @@ export async function GET(req: Request) {
     const search = (searchParams.get("search") || "").trim();
     const status = toStatus(searchParams.get("status") || undefined);
     const source = (searchParams.get("source") || "").trim() || undefined;
-
     const topic = (searchParams.get("topic") || "").trim();
 
     const skip = (page - 1) * limit;
@@ -119,34 +111,30 @@ export async function GET(req: Request) {
     if (source) where.source = source;
 
     if (topic) {
-      const allTopicsData = await prisma.feedbackItem.findMany({
+      const target = topic.toLowerCase().trim();
+      const matchingVariations = new Set<string>();
+
+      //Fetch ALL topics currently in the database
+      const allItems = await prisma.feedbackItem.findMany({
         select: { topics: true },
       });
 
-      const target = topic.toLowerCase();
-      const matchingVariations = new Set<string>();
-
-      for (const item of allTopicsData) {
-        if (!Array.isArray(item.topics)) continue;
-
-        for (const t of item.topics) {
-          if ((t ?? "").toString().trim().toLowerCase() === target) {
-            matchingVariations.add(t);
+      //Scan for matches
+      for (const item of allItems) {
+        if (Array.isArray(item.topics)) {
+          for (const t of item.topics) {
+            if (t.toLowerCase().trim() === target) {
+              matchingVariations.add(t);
+            }
           }
         }
       }
 
-      const variationsArray = Array.from(matchingVariations);
-
-      console.log(
-        `[Topic Filter] Searched for: "${target}" | Found in DB:`,
-        variationsArray
-      );
-
-      if (variationsArray.length > 0) {
-        where.topics = { hasSome: variationsArray };
+      //Apply the filter
+      if (matchingVariations.size > 0) {
+        where.topics = { hasSome: Array.from(matchingVariations) };
       } else {
-        where.topics = { hasSome: ["__NO_MATCH__"] };
+        where.topics = { hasSome: [topic] };
       }
     }
 
