@@ -44,11 +44,11 @@ By default, all new sign-ups are **MEMBERS**. To promote a user to **ADMIN**, yo
 
 **Option B: Using SQL (pgAdmin)**
 Run the following query on your RDS instance:
-```sql```
+```sql
 UPDATE "User"
 SET role = 'ADMIN'
 WHERE email = 'user@example.com';
-
+```
 
 ## 2. Data Ingestion & AI Analysis - Automated Workflows (Cron Jobs)
 

@@ -106,13 +106,31 @@ export async function GET(req: Request) {
     if (status) where.status = status;
     if (source) where.source = source;
     if (topic) {
-      where.topics = {
-        hasSome: [
-          topic,
-          topic.toLowerCase(),
-          topic.charAt(0).toUpperCase() + topic.slice(1),
-        ],
-      };
+      //Fetch all items just to get their topics (lightweight)
+
+      const allTopicsData = await prisma.feedbackItem.findMany({
+        select: { topics: true },
+      });
+
+      //Find every variation that matches case-insensitively
+      const target = topic.toLowerCase();
+      const matchingVariations = new Set<string>();
+
+      for (const item of allTopicsData) {
+        if (!item.topics) continue;
+        for (const t of item.topics) {
+          if (t.toLowerCase() === target) {
+            matchingVariations.add(t);
+          }
+        }
+      }
+
+      //Search for any of the found variations
+      if (matchingVariations.size > 0) {
+        where.topics = { hasSome: Array.from(matchingVariations) };
+      } else {
+        where.topics = { hasSome: ["__NO_MATCH__"] };
+      }
     }
     if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
