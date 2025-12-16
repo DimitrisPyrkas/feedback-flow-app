@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/session";
 import prisma from "@/lib/prisma";
-import { Status } from "@prisma/client";
+import { Prisma, Status } from "@prisma/client";
 
-function toStatus(str?: string): Status | undefined {
-  if (!str) return undefined;
-  if (Object.values(Status).includes(str as Status)) {
-    return str as Status;
-  }
-  return undefined;
+function toStatus(value?: string): Status | undefined {
+  if (!value) return undefined;
+  const v = value.toUpperCase();
+  return v === "NEW" || v === "ACKNOWLEDGED" || v === "ACTIONED"
+    ? (v as Status)
+    : undefined;
 }
 
+// POST : Create feedback
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
   }
 }
 
-// GET : list feedback items with filters + pagination
+// GET : list feedback items with filters
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -100,45 +101,36 @@ export async function GET(req: Request) {
 
     const skip = (page - 1) * limit;
 
-    const where: {
-      status?: Status;
-      source?: string;
-      topics?: { hasSome: string[] };
-      rawContent?: { contains: string; mode: "insensitive" };
-    } = {};
+    const where: Prisma.FeedbackItemWhereInput = {};
 
     if (status) where.status = status;
     if (source) where.source = source;
+    if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
     if (topic) {
-      const target = topic.toLowerCase().trim();
-      const matchingVariations = new Set<string>();
+      const target = topic.toLowerCase();
 
-      //Fetch ALL topics currently in the database
+      //Fetch only ID and Topics for ALL items
       const allItems = await prisma.feedbackItem.findMany({
-        select: { topics: true },
+        select: { id: true, topics: true },
       });
 
-      //Scan for matches
-      for (const item of allItems) {
-        if (Array.isArray(item.topics)) {
-          for (const t of item.topics) {
-            if (t.toLowerCase().trim() === target) {
-              matchingVariations.add(t);
-            }
-          }
-        }
-      }
+      const matchingIds = allItems
+        .filter((item) => {
+          if (!Array.isArray(item.topics)) return false;
 
-      //Apply the filter
-      if (matchingVariations.size > 0) {
-        where.topics = { hasSome: Array.from(matchingVariations) };
+          return item.topics.some(
+            (t) => (t || "").toString().trim().toLowerCase() === target
+          );
+        })
+        .map((item) => item.id);
+
+      if (matchingIds.length > 0) {
+        where.id = { in: matchingIds };
       } else {
-        where.topics = { hasSome: [topic] };
+        where.id = { in: ["__NO_MATCH_POSSIBLE__"] };
       }
     }
-
-    if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
     const [items, total] = await Promise.all([
       prisma.feedbackItem.findMany({
