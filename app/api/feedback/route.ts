@@ -92,17 +92,28 @@ export async function GET(req: Request) {
     const search = (searchParams.get("search") || "").trim();
     const status = toStatus(searchParams.get("status") || undefined);
     const source = (searchParams.get("source") || "").trim() || undefined;
+    const topic = (searchParams.get("topic") || "").trim();
 
     const skip = (page - 1) * limit;
 
     const where: {
       status?: Status;
       source?: string;
+      topics?: { hasSome: string[] };
       rawContent?: { contains: string; mode: "insensitive" };
     } = {};
 
     if (status) where.status = status;
     if (source) where.source = source;
+    if (topic) {
+      where.topics = {
+        hasSome: [
+          topic,
+          topic.toLowerCase(),
+          topic.charAt(0).toUpperCase() + topic.slice(1),
+        ],
+      };
+    }
     if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
     const [items, total] = await Promise.all([
@@ -119,6 +130,7 @@ export async function GET(req: Request) {
           createdAt: true,
           sentiment: true,
           severity: true,
+          topics: true,
         },
       }),
       prisma.feedbackItem.count({ where }),

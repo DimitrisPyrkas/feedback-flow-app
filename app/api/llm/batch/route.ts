@@ -76,7 +76,7 @@ export async function POST(req: Request) {
           prisma.feedbackAnalysis.create({
             data: {
               feedbackItemId: item.id,
-              userId: null,
+              userId: session.user.id,
               sentiment: result.sentiment,
               severityScore: result.severity,
               summary: result.summary,

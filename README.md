@@ -2,7 +2,7 @@
 
 FeedbackFlow is an internal feedback intelligence and triage tool. It ingests external feedback (e.g. GitHub issues), runs AI analysis to extract sentiment, severity, and topics, and surfaces the most important issues for product teams to act on.
 
-This project was built for **[StartupExpert]** as part of an internal tooling initiative to make feedback processing more structured, searchable, and actionable.
+This project was built for **🚀StartupExpert🚀** as part of an internal tooling initiative to make feedback processing more structured, searchable, and actionable.
 
 ---
 
@@ -15,7 +15,7 @@ This project was built for **[StartupExpert]** as part of an internal tooling in
   - Topics (keywords / themes)
 - **Highlights critical issues** via:
   - High-severity signals in the UI
-  - Automatic Slack alerts for S4/S5 items
+  - Automatic Slack alerts for `S4/S5` items
 - **Enables structured triage** with:
   - `NEW → ACKNOWLEDGED → ACTIONED` workflow
   - Per-change triage notes
@@ -94,7 +94,7 @@ For operational details (cron jobs, environment variables, etc.), see
 - Triage controls:
   - Status transitions: `NEW → ACKNOWLEDGED → ACTIONED`
   - Triage note box (optional note per change)
-- High-severity banner for S4/S5 including:
+- High-severity banner for `S4/S5` including:
   - Clear warning
   - Shortcut link to the Slack `#alerts` channel
 
@@ -117,7 +117,7 @@ For operational details (cron jobs, environment variables, etc.), see
     ```bash
     npm install
 3. **Set up Environment variables**
-  - in .env and .env.local files add the keys for (OpenAI, Cron Secret, NextAuth Secret, Database URL).
+  - in `.env and .env.local` files add the keys for (OpenAI, Cron Secret, NextAuth Secret, Database URL).
 
 4. **Run locally**
    ```bash 
@@ -125,8 +125,7 @@ For operational details (cron jobs, environment variables, etc.), see
     npm run dev
 
 For details on how to promote users to Admin, access the production database, and configure the background Cron jobs, please refer to the Operations Guide:
-
-➡️ Read docs/operations.md
+➡️ Read [`docs/operations.md`](docs/operations.md)
 
 
 

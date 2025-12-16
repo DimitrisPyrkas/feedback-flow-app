@@ -44,7 +44,7 @@ By default, all new sign-ups are **MEMBERS**. To promote a user to **ADMIN**, yo
 
 **Option B: Using SQL (pgAdmin)**
 Run the following query on your RDS instance:
-```sql
+```sql```
 UPDATE "User"
 SET role = 'ADMIN'
 WHERE email = 'user@example.com';
@@ -73,6 +73,7 @@ FeedbackFlow relies on two background jobs orchestrated by AWS EventBridge and A
     
 
 ## 3. Environment & Configuration
+
   💻 Local Development
    1. Env Variables: Set in .env (do not commit to Git).
     - NEXTAUTH_URL=http://localhost:3000

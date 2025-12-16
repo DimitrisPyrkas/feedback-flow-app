@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         const created = await prisma.feedbackAnalysis.create({
           data: {
             feedbackItemId: item.id,
-            userId: null,
+            userId: session.user.id,
             sentiment: analysis.sentiment,
             topics: analysis.topics,
             severityScore: analysis.severity,

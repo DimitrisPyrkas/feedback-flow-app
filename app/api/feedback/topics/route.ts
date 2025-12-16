@@ -21,7 +21,7 @@ export async function GET() {
       if (!Array.isArray(item.topics)) continue;
 
       for (const raw of item.topics) {
-        const topic = (raw ?? "").toString().trim();
+        const topic = (raw ?? "").toString().trim().toLowerCase();
         if (!topic) continue;
 
         counts.set(topic, (counts.get(topic) ?? 0) + 1);
