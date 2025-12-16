@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/session";
 import prisma from "@/lib/prisma";
+import { Status } from "@prisma/client";
 
-type Status = "NEW" | "ACKNOWLEDGED" | "ACTIONED";
-function toStatus(value?: string): Status | undefined {
-  if (!value) return undefined;
-  const v = value.toUpperCase();
-  return v === "NEW" || v === "ACKNOWLEDGED" || v === "ACTIONED"
-    ? (v as Status)
-    : undefined;
+function toStatus(str?: string): Status | undefined {
+  if (!str) return undefined;
+  if (Object.values(Status).includes(str as Status)) {
+    return str as Status;
+  }
+  return undefined;
 }
 
-// POST : create feedback
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -20,6 +19,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+
     const rawContent =
       typeof body.rawContent === "string" ? body.rawContent.trim() : "";
 
@@ -32,6 +32,17 @@ export async function POST(req: Request) {
       typeof body.externalId === "string" && body.externalId.trim().length > 0
         ? body.externalId.trim()
         : `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    let initialTopics: string[] = [];
+    if (Array.isArray(body.topics)) {
+      initialTopics = (body.topics as unknown[])
+        .map((t) =>
+          String(t || "")
+            .trim()
+            .toLowerCase()
+        )
+        .filter((t) => t.length > 0);
+    }
 
     if (!rawContent) {
       return NextResponse.json(
@@ -49,7 +60,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         sentiment: null,
         severity: null,
-        topics: [],
+        topics: initialTopics,
       },
     });
 
@@ -92,6 +103,7 @@ export async function GET(req: Request) {
     const search = (searchParams.get("search") || "").trim();
     const status = toStatus(searchParams.get("status") || undefined);
     const source = (searchParams.get("source") || "").trim() || undefined;
+
     const topic = (searchParams.get("topic") || "").trim();
 
     const skip = (page - 1) * limit;
@@ -105,33 +117,39 @@ export async function GET(req: Request) {
 
     if (status) where.status = status;
     if (source) where.source = source;
-    if (topic) {
-      //Fetch all items just to get their topics (lightweight)
 
+    if (topic) {
       const allTopicsData = await prisma.feedbackItem.findMany({
         select: { topics: true },
       });
 
-      //Find every variation that matches case-insensitively
       const target = topic.toLowerCase();
       const matchingVariations = new Set<string>();
 
       for (const item of allTopicsData) {
-        if (!item.topics) continue;
+        if (!Array.isArray(item.topics)) continue;
+
         for (const t of item.topics) {
-          if (t.toLowerCase() === target) {
+          if ((t ?? "").toString().trim().toLowerCase() === target) {
             matchingVariations.add(t);
           }
         }
       }
 
-      //Search for any of the found variations
-      if (matchingVariations.size > 0) {
-        where.topics = { hasSome: Array.from(matchingVariations) };
+      const variationsArray = Array.from(matchingVariations);
+
+      console.log(
+        `[Topic Filter] Searched for: "${target}" | Found in DB:`,
+        variationsArray
+      );
+
+      if (variationsArray.length > 0) {
+        where.topics = { hasSome: variationsArray };
       } else {
         where.topics = { hasSome: ["__NO_MATCH__"] };
       }
     }
+
     if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
     const [items, total] = await Promise.all([
