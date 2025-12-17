@@ -71,6 +71,8 @@ export async function POST(req: Request) {
       try {
         const result: AnalyzeResult = await analyzeFeedback(item.rawContent);
 
+        const cleanTopics = result.topics.map(t => t.toLowerCase());
+
         //Store a new FeedbackAnalysis + update FeedbackItem snapshot
         await prisma.$transaction([
           prisma.feedbackAnalysis.create({
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
               sentiment: result.sentiment,
               severityScore: result.severity,
               summary: result.summary,
-              topics: result.topics,
+              topics: cleanTopics,
               status: "NEW",
             },
           }),
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
             data: {
               sentiment: result.sentiment,
               severity: result.severity,
-              topics: result.topics,
+              topics: cleanTopics,
               //Auto-ACK as part of triage in Pattern A
               ...(result.severity >= 4
                 ? { status: "ACKNOWLEDGED" as const }

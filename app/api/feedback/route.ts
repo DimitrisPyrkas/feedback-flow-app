@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     let initialTopics: string[] = [];
     if (Array.isArray(body.topics)) {
       initialTopics = (body.topics as unknown[])
-        .map((t) => String(t || "").trim())
+        .map((t) => String(t || "").trim().toLocaleLowerCase())
         .filter((t) => t.length > 0);
     }
 
@@ -91,7 +91,6 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 10;
     const search = (searchParams.get("search") || "").trim();
@@ -100,37 +99,18 @@ export async function GET(req: Request) {
     const topic = (searchParams.get("topic") || "").trim();
 
     const skip = (page - 1) * limit;
-
     const where: Prisma.FeedbackItemWhereInput = {};
 
     if (status) where.status = status;
     if (source) where.source = source;
     if (search) where.rawContent = { contains: search, mode: "insensitive" };
 
+    // --- SIMPLE SEARCH ---
+    // Since DB only has "next.js", we just search for "next.js"
     if (topic) {
-      const target = topic.toLowerCase();
-
-      //Fetch only ID and Topics for ALL items
-      const allItems = await prisma.feedbackItem.findMany({
-        select: { id: true, topics: true },
-      });
-
-      const matchingIds = allItems
-        .filter((item) => {
-          if (!Array.isArray(item.topics)) return false;
-
-          return item.topics.some(
-            (t) => (t || "").toString().trim().toLowerCase() === target
-          );
-        })
-        .map((item) => item.id);
-
-      if (matchingIds.length > 0) {
-        where.id = { in: matchingIds };
-      } else {
-        where.id = { in: ["__NO_MATCH_POSSIBLE__"] };
-      }
+      where.topics = { hasSome: [topic.toLowerCase()] };
     }
+    // ---------------------
 
     const [items, total] = await Promise.all([
       prisma.feedbackItem.findMany({
@@ -139,14 +119,8 @@ export async function GET(req: Request) {
         skip,
         take: limit,
         select: {
-          id: true,
-          source: true,
-          rawContent: true,
-          status: true,
-          createdAt: true,
-          sentiment: true,
-          severity: true,
-          topics: true,
+          id: true, source: true, rawContent: true, status: true,
+          createdAt: true, sentiment: true, severity: true, topics: true,
         },
       }),
       prisma.feedbackItem.count({ where }),

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     // Normalize topics as clean string[]
     const topicsArray = Array.isArray(analysisResult.topics)
-      ? analysisResult.topics.map((t) => String(t).trim()).filter(Boolean)
+      ? analysisResult.topics.map((t) => String(t).trim().toLowerCase()).filter(Boolean)
       : [];
 
     // Store analysis + update snapshot on FeedbackItem

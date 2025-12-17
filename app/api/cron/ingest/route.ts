@@ -7,7 +7,7 @@ type IngestItem = {
   source: string;
   externalId: string;
   rawContent: string;
-  originalTimestamp?: string; 
+  originalTimestamp?: string;
 };
 
 type IngestBody = {
@@ -31,7 +31,6 @@ export async function POST(req: Request) {
     const items = Array.isArray(body?.items) ? body!.items : [];
 
     if (!items.length) {
-      
       return NextResponse.json(
         { ok: true, ingested: 0, analyzed: 0, message: "No items provided." },
         { status: 200 }
@@ -57,7 +56,7 @@ export async function POST(req: Request) {
           externalId,
           rawContent,
           originalTimestamp: ts,
-          userId: null as string | null, 
+          userId: null as string | null,
           status: "NEW" as const,
         };
       })
@@ -113,11 +112,13 @@ export async function POST(req: Request) {
           await prisma.feedbackAnalysis.create({
             data: {
               feedbackItemId: item.id,
-              userId: null, 
+              userId: null,
               sentiment: analysis.sentiment,
               severityScore: analysis.severity,
               summary: analysis.summary,
-              topics: analysis.topics,
+              topics: Array.isArray(analysis.topics)
+                ? analysis.topics.map((t) => String(t).trim().toLowerCase())
+                : [],
               status: "NEW",
             },
           });
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
               sentiment: analysis.sentiment,
               severity: analysis.severity,
               topics: Array.isArray(analysis.topics)
-                ? analysis.topics.map((t) => String(t))
+                ? analysis.topics.map((t) => String(t).trim().toLowerCase())
                 : [],
               //Auto-ACK in Pattern A when severity is high
               ...(analysis.severity >= 4
@@ -157,7 +158,6 @@ export async function POST(req: Request) {
           const msg =
             err instanceof Error ? err.message : "Unknown analysis error";
           console.error("Cron LLM analysis failed for feedback", item.id, msg);
-          
         }
       }
     }
@@ -166,8 +166,8 @@ export async function POST(req: Request) {
     try {
       await prisma.ingestionLog.create({
         data: {
-          source: "github", 
-          runId: startedAt.toISOString(), 
+          source: "github",
+          runId: startedAt.toISOString(),
           level: analysisFailed === 0 ? "INFO" : "WARN",
           message: `received=${items.length}, valid=${cleaned.length}, ingested=${result.count}, analyzed=${analyzedCount}, failed=${analysisFailed}`,
           meta: {
@@ -208,5 +208,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-
