@@ -87,7 +87,7 @@ FeedbackFlow relies on two background jobs orchestrated by AWS EventBridge and A
   ☁️ Production (AWS)
   1. Hosting: AWS Amplify (Next.js SSR)
    - Domain: https://www.feedbackflow.site
-  2. Database: AWS RDS MySQL (Publicly accessible, secured via Security Group).
+  2. Database: AWS RDS PostgreSQL (Publicly accessible, secured via Security Group).
   3. Environment Variables:
    - Managed in Amplify Console → Hosting → Environment variables.
    - Note: These are securely injected into the runtime during the build process (amplify.yml).
