@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -56,7 +56,7 @@ model FeedbackItem {
   createdAt         DateTime @default(now())
   sentiment         String?   // "positive" | "neutral" | "negative"
   severity          Int?
-  topics            String[]
+  topics            Json
 
 
   userId            String?        
